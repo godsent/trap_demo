@@ -2707,11 +2707,11 @@ class Trap::Fireboll < Trap::Base
   end
 
   def screen_x
-    x * 32 + x_offset
+    (x - $game_map.display_x) * 32 + x_offset
   end
 
   def screen_y
-    y * 32 + y_offset
+    (y - $game_map.display_y) * 32 + y_offset
   end
 
   def to_save

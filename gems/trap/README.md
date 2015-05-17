@@ -1,5 +1,5 @@
 # Trap - traps for RPG Maker VX ACE
-Ловушки для RPG Maker VX ACE.
+Ловушки для RPG Maker VX ACE. Демо - https://github.com/godsent/trap_demo
 
 ###Как установить
 - Подключите AASM https://github.com/godsent/aasm
