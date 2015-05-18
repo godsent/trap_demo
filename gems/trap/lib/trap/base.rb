@@ -61,14 +61,27 @@ class Trap::Base
     end
   end
 
-  def message
-    Messager::Queue::Message.new(:damage_to_hp).tap do |message| 
-      message.damage = damage_value 
+  def apply_states(char)
+    (@options[:states] || []).each do |state_id|
+      char.add_state state_id
+      display_state char, $data_states[state_id]
     end
   end
 
+  def display_state(char, state)
+    message = Messager::Queue::Message.new :icon 
+    message.text = state.name 
+    message.icon_index = state.icon_index
+    char.message_queue.push  message   
+  end
+
+  def apply_damage(char)
+    char.hp -= damage_value
+    display_damage char
+  end
+
   def display_damage(char)
-    char.message_queue.push message if defined? Messager
+    char.message_queue.damage_to_hp damage_value if defined? Messager
   end
 
   def speed

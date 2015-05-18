@@ -79,7 +79,7 @@
 #Trap['machinegun1'].run
 
 module Trap
-  VERSION = '0.0.1'
+  VERSION = '0.1.0'
 
   module Defaults
     module Thorns
@@ -128,7 +128,7 @@ module Trap
     end
 
     def []=(id, trap)
-  	  traps[id] = trap
+      traps[id] = trap
     end
 
     def main(id)
@@ -173,7 +173,7 @@ module Trap
   end
 end
 
-#gems/../lib/trap/options.rb
+#gems/trap/lib/trap/options.rb
 class Trap::Options
   def self.build(&block)
     new.tap { |b| b.instance_eval(&block) }
@@ -208,6 +208,10 @@ class Trap::Options
     end
   end
 
+  def states(*ids)
+    @options[:states] = ids.flatten
+  end
+
   def [](key)
     @options[key]
   end
@@ -216,7 +220,7 @@ class Trap::Options
     Trap::Options.new.tap { |o| o.instance_eval(&block) }
   end
 end
-#gems/../lib/trap/route.rb
+#gems/trap/lib/trap/route.rb
 class Trap::Route
   def self.draw(&block)
     new.tap { |route| route.instance_eval(&block) }
@@ -299,11 +303,11 @@ class Trap::Route
     @cells.last[1]
   end
 end
-#gems/../lib/trap/patch.rb
+#gems/trap/lib/trap/patch.rb
 module Trap::Patch
 end
 
-#gems/../lib/trap/patch/spriteset_map_patch.rb
+#gems/trap/lib/trap/patch/spriteset_map_patch.rb
 class Spriteset_Map
   class << self
     attr_writer :trap_sprites 
@@ -330,7 +334,7 @@ class Spriteset_Map
     original_dispose_for_traps 
   end
 end
-#gems/../lib/trap/patch/data_manager_patch.rb
+#gems/trap/lib/trap/patch/data_manager_patch.rb
 module DataManager
   instance_eval do
     alias make_save_contents_for_trap make_save_contents
@@ -348,7 +352,7 @@ module DataManager
     end
   end
 end
-#gems/../lib/trap/patch/scene_base_patch.rb
+#gems/trap/lib/trap/patch/scene_base_patch.rb
 class Scene_Base
   alias original_terminate_for_trap terminate
   def terminate
@@ -358,7 +362,7 @@ class Scene_Base
     end
   end
 end
-#gems/../lib/trap/patch/scene_map_patch.rb
+#gems/trap/lib/trap/patch/scene_map_patch.rb
 class Scene_Map
   alias original_start_for_trap start 
   def start
@@ -366,7 +370,7 @@ class Scene_Map
     Trap.all.each(&:restore_after_save_load)
   end
 end
-#gems/../lib/trap/patch/game_map_patch.rb
+#gems/trap/lib/trap/patch/game_map_patch.rb
 class Game_Map
   attr_reader :map_id
 
@@ -381,11 +385,11 @@ class Game_Map
     Trap.for_map(@map_id).each(&:resume)
   end
 end
-#gems/../lib/trap/concerns.rb
+#gems/trap/lib/trap/concerns.rb
 module Trap::Concerns
 end
 
-#gems/../lib/trap/concerns/hpable.rb
+#gems/trap/lib/trap/concerns/hpable.rb
 module Trap::Concerns::HPable
   def hp
     actor.hp
@@ -399,21 +403,29 @@ module Trap::Concerns::HPable
     actor.mhp
   end
 end
-#gems/../lib/trap/patch/game_player_patch.rb
+#gems/trap/lib/trap/concerns/stateable.rb
+module Trap::Concerns::Stateable
+  def add_state(id)
+    actor.add_state id
+  end
+end
+#gems/trap/lib/trap/patch/game_player_patch.rb
 class Game_Player
   include Trap::Concerns::HPable
+  include Trap::Concerns::Stateable
 end
-#gems/../lib/trap/patch/game_follower_patch.rb
+#gems/trap/lib/trap/patch/game_follower_patch.rb
 class Game_Follower
   include Trap::Concerns::HPable
+  include Trap::Concerns::Stateable
 end
-#gems/../lib/trap/patch/game_followers_patch.rb
+#gems/trap/lib/trap/patch/game_followers_patch.rb
 class Game_Followers
   def visible_followers
     visible_folloers
   end
 end
-#gems/../lib/trap/base.rb
+#gems/trap/lib/trap/base.rb
 class Trap::Base
   include AASM
   attr_writer :main, :slow
@@ -477,14 +489,27 @@ class Trap::Base
     end
   end
 
-  def message
-    Messager::Queue::Message.new(:damage_to_hp).tap do |message| 
-      message.damage = damage_value 
+  def apply_states(char)
+    (@options[:states] || []).each do |state_id|
+      char.add_state state_id
+      display_state char, $data_states[state_id]
     end
   end
 
+  def display_state(char, state)
+    message = Messager::Queue::Message.new :icon 
+    message.text = state.name 
+    message.icon_index = state.icon_index
+    char.message_queue.push  message   
+  end
+
+  def apply_damage(char)
+    char.hp -= damage_value
+    display_damage char
+  end
+
   def display_damage(char)
-    char.message_queue.push message if defined? Messager
+    char.message_queue.damage_to_hp damage_value if defined? Messager
   end
 
   def speed
@@ -500,7 +525,7 @@ class Trap::Base
     Ticker.untrack self
   end
 end
-#gems/../lib/trap/thorns.rb
+#gems/trap/lib/trap/thorns.rb
 module Trap
   class Thorns < Base
     include Trap::Defaults::Thorns
@@ -539,13 +564,13 @@ module Trap
       end
     end
 
-  	def init_variables
+    def init_variables
       @damage_value  = @options[:damage]
       @default_speed = @options[:speed]
       assert('map') { @map_id = @options[:map] }
       assert('events') { @events = @options[:events] }
       @ticked, @hazard, @current = 0, false, -1
-  	end
+    end
 
     def tick
       @hazard = false if @ticked % @options[:hazard_timeout] == 0
@@ -555,7 +580,7 @@ module Trap
       @ticked += 1
     end
 
-  	private
+    private
 
     def frame
       @ticked % speed
@@ -604,15 +629,15 @@ module Trap
       if same_map? && @hazard
         characters.select { |char| char.x == x && char.y == y }.each do |char|
           @hazard = false
-          char.hp -= damage_value
-          display_damage char
+          apply_damage char
+          apply_states char
         end
       end
     end
 
-  	def switch_index(char = 'A')
-  	  [@map_id, @events[@current], char]
-  	end
+    def switch_index(char = 'A')
+      [@map_id, @events[@current], char]
+    end
 
     def event
       $game_map.events[@events[@current]] if same_map?
@@ -626,12 +651,12 @@ module Trap
       event.y
     end
 
-  	def max_current
-  	  @events.length - 1
-  	end
+    def max_current
+      @events.length - 1
+    end
   end
 end
-#gems/../lib/trap/machinegun.rb
+#gems/trap/lib/trap/machinegun.rb
 class Trap::Machinegun < Trap::Base
   include Trap::Defaults::Machinegun
   aasm do
@@ -711,12 +736,14 @@ class Trap::Machinegun < Trap::Base
     map, route = @map_id, @route.copy
     dmg, spd = @options[:damage], @options[:speed]
     sprite_options = @options[:sprite]
+    state_ids = @options[:states]
     proc do 
       map map
       route route
       damage dmg if dmg
       speed spd if spd
       sprite sprite_options if sprite_options
+      states  state_ids if state_ids
     end
   end
 
@@ -728,7 +755,7 @@ class Trap::Machinegun < Trap::Base
     Trap[/#{@salt}/]
   end
 end
-#gems/../lib/trap/fireboll.rb
+#gems/trap/lib/trap/fireboll.rb
 class Trap::Fireboll < Trap::Base
   include Trap::Defaults::Fireboll 
 
@@ -798,11 +825,11 @@ class Trap::Fireboll < Trap::Base
   end
 
   def screen_x
-    x * 32 + x_offset
+    (x - $game_map.display_x) * 32 + x_offset
   end
 
   def screen_y
-    y * 32 + y_offset
+    (y - $game_map.display_y) * 32 + y_offset
   end
 
   def to_save
@@ -841,8 +868,8 @@ class Trap::Fireboll < Trap::Base
     dealed = false
     characters.select { |char| xes.include?(char.x) && yes.include?(char.y) }.each do |char|
       dealed = true
-      char.hp -= damage_value
-      display_damage char
+      apply_damage char
+      apply_states char
     end
     stop if dealed
   end
@@ -893,7 +920,7 @@ class Trap::Fireboll < Trap::Base
   end
 end
 
-#gems/../lib/trap/fireboll/sprite.rb
+#gems/trap/lib/trap/fireboll/sprite.rb
 class Trap::Fireboll::Sprite < Sprite_Base
   include Trap::Defaults::FirebollSprite
 

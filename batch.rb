@@ -1988,7 +1988,7 @@ end
 #Trap['machinegun1'].run
 
 module Trap
-  VERSION = '0.0.1'
+  VERSION = '0.1.0'
 
   module Defaults
     module Thorns
@@ -2115,6 +2115,10 @@ class Trap::Options
     else
       value
     end
+  end
+
+  def states(*ids)
+    @options[:states] = ids.flatten
   end
 
   def [](key)
@@ -2308,13 +2312,21 @@ module Trap::Concerns::HPable
     actor.mhp
   end
 end
+#gems/trap/lib/trap/concerns/stateable.rb
+module Trap::Concerns::Stateable
+  def add_state(id)
+    actor.add_state id
+  end
+end
 #gems/trap/lib/trap/patch/game_player_patch.rb
 class Game_Player
   include Trap::Concerns::HPable
+  include Trap::Concerns::Stateable
 end
 #gems/trap/lib/trap/patch/game_follower_patch.rb
 class Game_Follower
   include Trap::Concerns::HPable
+  include Trap::Concerns::Stateable
 end
 #gems/trap/lib/trap/patch/game_followers_patch.rb
 class Game_Followers
@@ -2386,14 +2398,27 @@ class Trap::Base
     end
   end
 
-  def message
-    Messager::Queue::Message.new(:damage_to_hp).tap do |message| 
-      message.damage = damage_value 
+  def apply_states(char)
+    (@options[:states] || []).each do |state_id|
+      char.add_state state_id
+      display_state char, $data_states[state_id]
     end
   end
 
+  def display_state(char, state)
+    message = Messager::Queue::Message.new :icon 
+    message.text = state.name 
+    message.icon_index = state.icon_index
+    char.message_queue.push  message   
+  end
+
+  def apply_damage(char)
+    char.hp -= damage_value
+    display_damage char
+  end
+
   def display_damage(char)
-    char.message_queue.push message if defined? Messager
+    char.message_queue.damage_to_hp damage_value if defined? Messager
   end
 
   def speed
@@ -2513,8 +2538,8 @@ module Trap
       if same_map? && @hazard
         characters.select { |char| char.x == x && char.y == y }.each do |char|
           @hazard = false
-          char.hp -= damage_value
-          display_damage char
+          apply_damage char
+          apply_states char
         end
       end
     end
@@ -2620,12 +2645,14 @@ class Trap::Machinegun < Trap::Base
     map, route = @map_id, @route.copy
     dmg, spd = @options[:damage], @options[:speed]
     sprite_options = @options[:sprite]
+    state_ids = @options[:states]
     proc do 
       map map
       route route
       damage dmg if dmg
       speed spd if spd
       sprite sprite_options if sprite_options
+      states  state_ids if state_ids
     end
   end
 
@@ -2750,8 +2777,8 @@ class Trap::Fireboll < Trap::Base
     dealed = false
     characters.select { |char| xes.include?(char.x) && yes.include?(char.y) }.each do |char|
       dealed = true
-      char.hp -= damage_value
-      display_damage char
+      apply_damage char
+      apply_states char
     end
     stop if dealed
   end

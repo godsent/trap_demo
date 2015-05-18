@@ -32,6 +32,10 @@ class Trap::Options
     end
   end
 
+  def states(*ids)
+    @options[:states] = ids.flatten
+  end
+
   def [](key)
     @options[key]
   end

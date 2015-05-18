@@ -101,8 +101,8 @@ module Trap
       if same_map? && @hazard
         characters.select { |char| char.x == x && char.y == y }.each do |char|
           @hazard = false
-          char.hp -= damage_value
-          display_damage char
+          apply_damage char
+          apply_states char
         end
       end
     end

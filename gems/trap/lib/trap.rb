@@ -78,7 +78,7 @@
 #Trap['machinegun1'].run
 
 module Trap
-  VERSION = '0.0.1'
+  VERSION = '0.1.0'
 
   module Defaults
     module Thorns

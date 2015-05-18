@@ -77,12 +77,14 @@ class Trap::Machinegun < Trap::Base
     map, route = @map_id, @route.copy
     dmg, spd = @options[:damage], @options[:speed]
     sprite_options = @options[:sprite]
+    state_ids = @options[:states]
     proc do 
       map map
       route route
       damage dmg if dmg
       speed spd if spd
       sprite sprite_options if sprite_options
+      states  state_ids if state_ids
     end
   end
 

@@ -110,8 +110,8 @@ class Trap::Fireboll < Trap::Base
     dealed = false
     characters.select { |char| xes.include?(char.x) && yes.include?(char.y) }.each do |char|
       dealed = true
-      char.hp -= damage_value
-      display_damage char
+      apply_damage char
+      apply_states char
     end
     stop if dealed
   end
