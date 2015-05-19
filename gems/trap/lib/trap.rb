@@ -29,11 +29,11 @@
 ####Fireboll
 #Fireboll is missile that fly by route and deal damage if touches character.
 #Then fieboll expodes with animation.
-#Fireboll need 4 by 4 sprite with following scheme
-#down | up | right | left 
-#down | up | right | left
-#down | up | right | left
-#down | up | right | left
+#Fireboll need 3 by 4 sprite with following scheme
+#down  | down  | down
+#left  | left  | left
+#right | right | right
+#up    | up    | up
 #Frames of one direaction whill be switching during fly, so you can animate the missile
 #You can create fireboll with following
 #fireboll = Trap::Fireboll.build 'fireboll1' do
@@ -56,7 +56,7 @@
 ####Machinegun
 #Machinegun is Trap::Fireboll automated launcher.
 #Create it with following code
-#trap = Trap::Machinegun.build 'machinegun1' do 
+#trap = Trap::Machinegun.build 'machinegun1' do
 #  #accepts all the settings a firebolls accepts pluse interval
 #  interval 200 #interval between launches in frames
 #  map 1
@@ -88,7 +88,7 @@ module Trap
           speed: 30,   #whole cycle in frames
           hazard_timeout: 5, #after switching to A how many frames the thor will be cutting?
           se: { 'A' => 'Sword4'}, #se playing on each local switch
-          timing: { #on which frame of the cycle will be enabled every local switch 
+          timing: { #on which frame of the cycle will be enabled every local switch
             0 => 'A', 2 => 'B', 4 => 'C', 19 => 'D', 21 => 'OFF'
           }
         }
@@ -97,7 +97,7 @@ module Trap
 
     module Fireboll
       def default_options
-        { 
+        {
           speed: 16,  #speed of missile (smaller number for faster missile fly)
           damage: 200 #damage of missile
         }
@@ -112,8 +112,8 @@ module Trap
 
     module FirebollSprite
       def default_options
-        { 
-          speed: 0.15, #speed of updating missile sprite 
+        {
+          speed: 0.08, #speed of updating missile sprite
           sprite_path: 'Graphics/System/fireboll', #path to missile sprite
           animation: 111 #die animation id
         }

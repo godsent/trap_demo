@@ -2,8 +2,8 @@ class Trap::Fireboll::Sprite < Sprite_Base
   include Trap::Defaults::FirebollSprite
 
   ROWS  = 4
-  COLUMNS = 4
-  COLUMNS_HASH = { down: 0, up: 1, right: 2, left: 3 }.tap { |h| h.default = 0 }
+  COLUMNS = 3
+  ROWS_HASH = { down: 0, up: 3, right: 2, left: 1 }.tap { |h| h.default = 0 }
 
   def initialize(trap, options = nil)
     @options = make_options options
@@ -34,7 +34,7 @@ class Trap::Fireboll::Sprite < Sprite_Base
     if id = @options[:animation]
       start_animation $data_animations[id], &b
     else
-      b.call 
+      b.call
     end
   end
 
@@ -73,13 +73,13 @@ class Trap::Fireboll::Sprite < Sprite_Base
 
   def column
     nullify_when_animated do
-      @width / COLUMNS * COLUMNS_HASH[@trap.direction]
+      @width / COLUMNS * (@updated.to_i % COLUMNS)
     end
   end
 
   def row
     nullify_when_animated do
-      (@height / ROWS) * (@updated.to_i % ROWS)
+      (@height / ROWS) * ROWS_HASH[@trap.direction]
     end
   end
 
