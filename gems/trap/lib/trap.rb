@@ -2,7 +2,7 @@
 #Author: Iren_Rin
 #Terms of use: none
 #Requirements: AASM, Ticker. Messager is supported
-#Version 0.0.1
+#Version 0.2
 #How to install
 #- install AASM
 #- install Ticker
