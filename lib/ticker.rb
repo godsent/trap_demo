@@ -5,7 +5,7 @@
 #author: Iren_Rin
 #restrictions of use: none
 #How to use
-#a) In any object 
+#a) In any object
 # timeout_in_frames = 80
 # Ticker.delay timeout_in_frames do
 #   puts 'finally'
@@ -30,6 +30,7 @@
 # Ticker.track self, :soft
 #
 module Ticker
+  VERSION = 0.2
   FLUSH_STRATEGIES = Hash.new [Scene_Base]
   FLUSH_STRATEGIES[:hard] = [Scene_Title, Scene_Gameover]
   FLUSH_STRATEGIES[:middle] = [Scene_Title, Scene_End, Scene_Gameover, Scene_Battle]
@@ -37,7 +38,7 @@ module Ticker
   def current_klass=(klass)
     queue[klass] ||= []
     tracked[klass] ||= []
-    @current_klass = klass 
+    @current_klass = klass
   end
 
   def track(object, strategy = :hard)
@@ -50,23 +51,18 @@ module Ticker
     tracked.each { |klass, arr| arr.reject! { |arr| arr[0] == object } }
   end
 
-  def delay(frames, strategy = :middle, &job)  
+  def delay(frames, strategy = :middle, &job)
     queue[@current_klass] << [frames, strategy, job]
   end
 
   def tick
-    queue[@current_klass].each do |arr| 
-      arr[0] -= 1       
-      arr[2].call if arr[0] <= 0 
-    end
-    clear_queue 
-    tracked[@current_klass].each do |arr|
-      arr[0].tick if arr[0].respond_to? :tick
-    end
+    tick_queue
+    tick_tracked
+    self.ticked += 1
   end
 
   def flush
-    b = proc do |arr| 
+    b = proc do |arr|
       (FLUSH_STRATEGIES[arr[1]] & @current_klass.ancestors).any?
     end
     tracked.each { |klass, arr| arr.reject!(&b) }
@@ -85,11 +81,35 @@ module Ticker
     queue.each { |klass, arr| arr.reject! { |arr| arr[0] <= 0 } }
   end
 
+  def ticked
+    @ticked || 0
+  end
+
+  def ticked=(val)
+    @ticked = val
+  end
+
+  private
+
+  def tick_queue
+    queue[@current_klass].each do |arr|
+      arr[0] -= 1
+      arr[2].call if arr[0] <= 0
+    end
+    clear_queue
+  end
+
+  def tick_tracked
+    tracked[@current_klass].dup.each do |arr|
+      arr[0].tick
+    end
+  end
+
   extend self
 end
 
 class Scene_Base
-  alias original_start_for_ticker start 
+  alias original_start_for_ticker start
   def start
     Ticker.current_klass = self.class
     Ticker.flush

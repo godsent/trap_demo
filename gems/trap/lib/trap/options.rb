@@ -7,6 +7,10 @@ class Trap::Options
     @options = {}
   end
 
+  def ensure_map! 
+    @options[:map] = $game_map.id unless @options[:map]
+  end
+
   def to_h
     @options 
   end
@@ -16,8 +20,20 @@ class Trap::Options
   end
 
   def events(*evs)
-    evs = evs.first.is_a?(Range) ? evs.map(&:to_a) : evs
-    @options[:events] = evs.flatten
+    assign_events evs, :events
+  end
+
+  def enabled_events(*evs)
+    assign_events evs, :enabled_events
+  end
+
+  def corner(x, y)
+    @options[:corner] = [x, y]
+  end
+
+  def entrance(x, y)
+    @options[:entrances] ||= []
+    @options[:entrances] << [x, y]
   end
 
   def route(value = nil, &block)
@@ -32,6 +48,19 @@ class Trap::Options
     end
   end
 
+  def safe_spots(value = nil, &block)
+    @options[:safe_spots] = if block_given?
+      init_and_eval block 
+    else
+      value
+    end
+  end
+
+  def safe_events(*evs)
+    @options[:safe_events] ||= []
+    @options[:safe_events]  << events(*evs)
+  end
+
   def states(*ids)
     @options[:states] = ids.flatten
   end
@@ -42,5 +71,16 @@ class Trap::Options
 
   def init_and_eval(block)
     Trap::Options.new.tap { |o| o.instance_eval(&block) }
+  end
+
+  def teleport(x, y)
+    @options[:teleport] = [x, y]
+  end
+
+  private
+
+  def assign_events(evs, key)
+    evs = evs.first.is_a?(Range) ? evs.map(&:to_a) : evs
+    @options[key] = evs.flatten
   end
 end

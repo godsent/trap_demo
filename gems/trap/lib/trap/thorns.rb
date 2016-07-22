@@ -1,61 +1,25 @@
 module Trap
-  class Thorns < Base
+  class Thorns < ThornsBase
     include Trap::Defaults::Thorns
+    attr_reader :ticked_was
 
-    aasm do
-      state :idle, initial: true
-      state :running
-      state :paused
-
-      event :run do
-        transitions from: :idle, to: :running do
-          after { track }
-        end
-      end
-
-      event :stop do
-        transitions from: [:running, :paused], to: :idle do
-          after { untrack }
-        end
-      end
-
-      event :pause do
-        transitions from: :running, to: :paused do
-          after { untrack }
-        end
-
-        transitions from: :idle, to: :idle
-      end
-
-      event :resume do
-        transitions from: :paused, to: :running do
-          after { track }
-        end
-
-        transitions from: :idle, to: :idle
-      end
+    def init_variables
+      super
+      @hazard, @current = false, -1
     end
 
-  	def init_variables
-      @damage_value  = @options[:damage]
-      @default_speed = @options[:speed]
-      assert('map') { @map_id = @options[:map] }
-      assert('events') { @events = @options[:events] }
-      @ticked, @hazard, @current = 0, false, -1
-  	end
+    private
 
-    def tick
-      @hazard = false if @ticked % @options[:hazard_timeout] == 0
-      next_thorns if frame == 0
-      current_thorns if @options[:timing].has_key? frame
-      deal_damage
-      @ticked += 1
-    end
-
-  	private
-
-    def frame
-      @ticked % speed
+    def tick_job
+      super do 
+        @hazard = false if @ticked % @options[:hazard_timeout] == 0
+        next_thorns if frame == 0
+        if @options[:timing].has_key? frame
+          current_thorns
+          name = @options[:se][@options[:timing][frame]]
+          play_se name, sound_volume if name
+        end
+      end
     end
 
     def next_thorns
@@ -64,33 +28,8 @@ module Trap
     end
 
     def current_thorns
-      disable_previouse_switch
-      enable_current_switch
-    end
-
-    def enable_current_switch
-      unless @options[:timing][frame] == 'OFF'
-        enable_switch @options[:timing][frame] 
-      end
-    end
-
-    def disable_previouse_switch
-      if prev_key = @options[:timing].keys.select { |k| k < frame }.max
-        disable_switch @options[:timing][prev_key]
-      end
-    end
-
-    def disable_switch(sw)
-      turn_switch sw, false
-    end
-
-    def enable_switch(sw)
-      play_se @options[:se][sw]
-      turn_switch sw, true
-    end
-
-    def turn_switch(sw, bool)
-      $game_self_switches[switch_index(sw)] = bool
+      disable_previouse_switch @events[@current]
+      enable_current_switch @events[@current]
     end
 
     def change_current
@@ -107,12 +46,8 @@ module Trap
       end
     end
 
-  	def switch_index(char = 'A')
-  	  [@map_id, @events[@current], char]
-  	end
-
     def event
-      $game_map.events[@events[@current]] if same_map?
+      $game_map.events[@events[@current]]
     end
 
     def x
@@ -123,8 +58,8 @@ module Trap
       event.y
     end
 
-  	def max_current
-  	  @events.length - 1
-  	end
+    def max_current
+      @events.length - 1
+    end
   end
 end

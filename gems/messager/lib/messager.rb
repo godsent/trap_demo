@@ -11,7 +11,7 @@
 #for battlers with defined screen_x and screen_y.
 #By default only enemies has these coordinates.
 #3) You can call message popup manually with following
-#a) 
+#a)
 # battler = $game_troop.members[0]
 # battler.message_queue.damage_to_hp 250
 # battler.message_queue.heal_tp 100
@@ -27,7 +27,7 @@
 # message.icon_index = state.icon_index
 # $game_troop.members.sample.message_queue.push message#encoding=utf-8
 module Messager
-  VERSION = '0.0.1'
+  VERSION = '0.1'
 
   module Vocab
     CounterAttack = 'Контр.'
@@ -57,10 +57,10 @@ module Messager
         {
           battler_offset: -80, #distance between battler screen_y and popup
           character_offset: -50, #distance between character screen_y and popup
-          font_size: 24, 
+          font_size: 24,
           font_name: 'Arial',
           dead_timeout: 70, #in frames, time to dispose popup
-          icon_width: 24, 
+          icon_width: 24,
           icon_height: 24,
 
           colors: { #RGB
@@ -78,13 +78,19 @@ module Messager
             evasion: [153, 255, 153],
             gain_item: [0, 128, 255],
             gain_weapon: [0, 128, 128],
-            gain_armor:  [34, 139, 34]
+            gain_armor:  [34, 139, 34],
+            damage_to_energy: [225, 125, 0],
+            damage_to_en: [255, 125, 0],
+            heal_energy: [255, 125, 0],
+            heal_en: [255, 125, 0]
           }.tap { |h| h.default = [255, 255, 255] },
 
           postfixes: {
             damage_to_hp: 'HP', heal_hp: 'HP',
             damage_to_tp: 'TP', heal_tp: 'TP',
             damage_to_mp: 'MP', heal_mp: 'MP',
+            damage_to_en: 'EN', damage_to_energy: 'EN',
+            heal_en: 'EN',  heal_energy: 'EN'
           }.tap { |h| h.default = '' }
         }
       end

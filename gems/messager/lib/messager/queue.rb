@@ -75,17 +75,25 @@ class Messager::Queue
     check if ready?
   end
 
+  def push_text(text)
+    push text_message(text)
+  end
+
   def check
     @messages.any? ? load : release
   end
 
   def show_message
-    if message = @messages.shift
+    if spriteset && message = @messages.shift
       spriteset.create_message_popup @target, message
     end
   end
 
   private
+
+  def text_message(text)
+    Messager::Queue::Message.new(:damage_to_hp).tap { |m| m.text = text }
+  end
 
   def spriteset
     SceneManager.scene.instance_variable_get :@spriteset

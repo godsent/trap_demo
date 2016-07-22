@@ -1,6 +1,7 @@
 module Trap::Patch
 end
 
+require 'trap/patch/rpg_audio_file_patch'
 require 'trap/patch/spriteset_map_patch'
 require 'trap/patch/data_manager_patch'
 require 'trap/patch/scene_base_patch'

@@ -244,7 +244,7 @@ class Window_BattleLog
   end
 
   def damage_message(target, key)
-    value = target.result.public_send "#{key}_damage"
+    value = target.result.public_send("#{key}_damage").to_i
     message(value < 0 ? :"heal_#{key}" : :"damage_to_#{key}").tap do |the_message|
       the_message.damage = value
       the_message.critical = target.result.critical

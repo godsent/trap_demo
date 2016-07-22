@@ -5,6 +5,7 @@ module DataManager
     def make_save_contents
       make_save_contents_for_trap.tap do |contents|
         contents[:traps] = Trap.to_save
+        contents[:trap_dj] = Trap::DJ.to_save
       end
     end
 
@@ -12,6 +13,7 @@ module DataManager
     def extract_save_contents(contents)
       extract_save_contents_for_trap contents
       Trap.reset contents[:traps]
+      Trap::DJ.reset contents[:trap_dj]
     end
   end
 end

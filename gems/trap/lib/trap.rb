@@ -47,7 +47,7 @@
 #    up    10, 1
 #  end
 #  sprite do
-#    sprite_path 'Graphics/system/fireboll' #path to missile sprite
+#    missile 'fireboll' #missile character
 #    animation 11 #expoloding animation
 #  end
 #end
@@ -69,7 +69,7 @@
 #    up    10, 1
 #  end
 #  sprite do
-#    sprite_path 'Graphics/system/fireboll' #path to missile sprite
+#    missile 'fireboll' #missile character
 #    animation 11 #expoloding animation
 #  end
 #end
@@ -78,18 +78,35 @@
 #Trap['machinegun1'].run
 
 module Trap
-  VERSION = '0.1.0'
+  VERSION = '0.2'
 
   module Defaults
     module Thorns
       def default_options
         {
-          damage: 100, #damage of thorn's hit
+          damage: '0.25 * b.mhp', #damage of thorn's hit
           speed: 30,   #whole cycle in frames
-          hazard_timeout: 5, #after switching to A how many frames the thor will be cutting?
+          hazard_timeout: 21, #after switching to A how many frames the thor will be cutting?
           se: { 'A' => 'Sword4'}, #se playing on each local switch
           timing: { #on which frame of the cycle will be enabled every local switch
             0 => 'A', 2 => 'B', 4 => 'C', 19 => 'D', 21 => 'OFF'
+          }
+        }
+      end
+    end
+
+    module Field
+      def default_options
+        {
+          damage: '0.33 * b.mhp', #damage of thorn's hit
+          speed: 120,   #whole cycle in frames
+          hazard_timeout: 21, #after switching to A how many frames the thor will be cutting?
+          se: { 'A' => 'Sword4'}, #se playing on each local switch
+          timing: { #on which frame of the cycle will be enabled every local switch
+            0 => 'A', 2 => 'B', 19 => 'C', 21 => 'OFF'
+          },
+          safe_spots: {
+            safe_events: []
           }
         }
       end
@@ -99,7 +116,35 @@ module Trap
       def default_options
         {
           speed: 16,  #speed of missile (smaller number for faster missile fly)
-          damage: 200 #damage of missile
+          damage: '0.5 * b.mhp', #damage of a missile
+          bgs: 'fire'
+        }
+      end
+    end
+
+    module Saw
+      def default_options
+        {
+          speed: 16,  #speed of missile (smaller number for faster missile fly)
+          damage: '0.5 * b.mhp', #damage of a missile
+          sprite: {
+            missile: 'saw',
+            animation: nil,
+            z: 99,
+            speed: 0.64
+          }
+        }
+      end
+    end
+
+    module Touch
+      def default_options
+        {
+          speed: 16,
+          sprite: {
+            missile: 'blue_sphaere',
+            animation: 131
+          }
         }
       end
     end
@@ -110,11 +155,26 @@ module Trap
       end
     end
 
+    module Touchgun
+      def default_options
+        { interval: 200 } #interval in frames between every missile launch
+      end
+    end
+
+    module Cells
+      def default_options
+        {
+          hazard_delay: 20,  #interval in frames between cell damage dealing
+          damage: '0.5 * b.mhp'
+         }
+      end
+    end
+
     module FirebollSprite
       def default_options
         {
           speed: 0.08, #speed of updating missile sprite
-          sprite_path: 'Graphics/System/fireboll', #path to missile sprite
+          missile: 'fireboll', #path to missile sprite
           animation: 111 #die animation id
         }
       end
@@ -127,7 +187,7 @@ module Trap
     end
 
     def []=(id, trap)
-  	  traps[id] = trap
+      traps[id] = trap
     end
 
     def main(id)
@@ -161,7 +221,11 @@ module Trap
     end
 
     def for_map(map_id)
-      all.select { |t| t.main? && t.map_id == map_id }
+      all_for_map(map_id).select(&:main?)
+    end
+
+    def all_for_map(map_id)
+      all.select { |t| t.map_id == map_id }
     end
 
     private
@@ -175,7 +239,15 @@ end
 require 'trap/options'
 require 'trap/route'
 require 'trap/patch'
+require 'trap/dj'
 require 'trap/base'
+require 'trap/thorns_base'
 require 'trap/thorns'
+require 'trap/field'
 require 'trap/machinegun'
 require 'trap/fireboll'
+require 'trap/touch'
+require 'trap/saw'
+require 'trap/touchgun'
+require 'trap/cells'
+require 'trap/block'

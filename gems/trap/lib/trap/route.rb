@@ -8,33 +8,57 @@ class Trap::Route
   end
 
   def start(x, y)
-    @cells << [x, y]
+    @cells << { x: x, y: y }
   end
 
   %w(down up left right).each do |method_name|
-    define_method method_name do |*args|
+    define_method method_name do |*args, &block|
       exact_method_name = %w(up down).include?(method_name) ? 'exact_y' : 'exact_x'
-      __send__(exact_method_name, args) { __send__ "step_#{method_name}" }
+      send(exact_method_name, args) { send "step_#{method_name}" }
+      @cells.last[:route] = self.class.draw(&block) if block
     end
+  end
+
+  def cycle!(direction = :down)
+    @cycle = true
+    @cells.last[:direction] = direction
+  end
+
+  def blink(x, y)
+    @cells.last[:direction] = :blink
+    @cells << { x: x, y: y }
+  end
+
+  def cycle?
+    !!@cycle
   end
 
   def cell
-    if @index < @cells.size
-      current_index = @index
-      @index += 1
-      @cells[current_index]
+    if @index < @cells.size || cycle?
+      @cells[@index % @cells.size].tap { @index += 1 }
     end
   end
 
-  def to_enum!
-    @cells = @cells.each
-  end
-
   def copy
-    self.class.new @cells
+    cells = copied_cells
+    self.class.new(cells).tap do |route| 
+      route.cycle! cells.last[:direction] if cycle?
+    end
   end
 
   private
+
+  def copied_cells
+    @cells.map { |cell| copy_cell cell }
+  end
+
+  def copy_cell(cell)
+    new_cell = cell.dup
+    if route = cell[:route]
+      new_cell[:route] = route.copy 
+    end
+    new_cell
+  end
 
   def exact_y(args)
     if args.size > 1
@@ -53,30 +77,30 @@ class Trap::Route
   end
 
   def step_down
-    @cells.last << :down
-    @cells << [x, y + 1]
+    @cells.last[:direction] = :down
+    @cells << { x: x, y: y + 1 }
   end
 
   def step_up
-    @cells.last << :up
-    @cells << [x, y - 1]
+    @cells.last[:direction] = :up
+    @cells << { x: x, y: y - 1 }
   end
 
   def step_left
-    @cells.last << :left
-    @cells << [x - 1, y]
+    @cells.last[:direction] = :left
+    @cells << { x: x - 1, y: y }
   end
 
   def step_right
-    @cells.last << :right
-    @cells << [x + 1, y]
+    @cells.last[:direction] = :right
+    @cells << { x: x + 1, y: y }
   end
-
+  
   def x
-    @cells.last.first
+    @cells.last[:x]
   end
 
   def y
-    @cells.last[1]
+    @cells.last[:y]
   end
 end
